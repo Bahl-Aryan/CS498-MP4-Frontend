@@ -31,7 +31,7 @@ export default function AddEventForm({ onAddEvent }) {
     onAddEvent(newEvent);
 
     setFormData({
-      name: '',
+      title: '',
       description: '',
       location: '',
       date: '',

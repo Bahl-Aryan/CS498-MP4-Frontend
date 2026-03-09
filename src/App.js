@@ -14,9 +14,13 @@ const FETCH_EVENTS_URL = `${API_BASE}/data`;
 const ADD_EVENT_URL = `${API_BASE}/events`;
 
 
-// TODO: Implement this function to fetch event data from your backend. Return the parsed JSON (an array of event objects)
-// HINT: Use the `fetch()` API and handle errors appropriately.
-const fetchEvents = async () => {};
+const fetchEvents = async () => {
+  if (!API_BASE) return [];
+  const res = await fetch(FETCH_EVENTS_URL);
+  if (!res.ok) throw new Error(`Failed to fetch events: ${res.status}`);
+  const json = await res.json();
+  return json.data ?? [];
+};
 
 
 function App({}) {
@@ -24,21 +28,41 @@ function App({}) {
   const [query, setQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
 
-  // TODO: Use TanStack Query's `useQuery` hook to fetch events from your backend.
-  // HINT: `queryKey` and a `queryFn`
-  const { data: events = [], isLoading, error } = useQuery({});
+  const { data: events = [], isLoading, error } = useQuery({
+    queryKey: ['events'],
+    queryFn: fetchEvents,
+  });
 
-  // TODO: Implement this function to send a POST request to your backend to add a new event.
-  // HINT: Use the `fetch()` API and implement error handling.
-  const addEvent = async (newEvent) => {};
+  const addEvent = async (newEvent) => {
+    if (!API_BASE) throw new Error('REACT_APP_API_BASE_URL is not set');
+    const res = await fetch(ADD_EVENT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newEvent.title,
+        date: newEvent.date,
+        description: newEvent.description ?? '',
+        image_url: newEvent.image_url ?? '',
+        location: newEvent.location ?? '',
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || errBody.detail || `Failed to add event: ${res.status}`);
+    }
+  };
 
-  // TODO: Use `useMutation` from TanStack Query to call your `addEvent` function.
-  // HINT: On success, invalidate the query (so 'events' can be refeteched and updated) and close the form pop-up.
-  const mutation = useMutation({});
+  const mutation = useMutation({
+    mutationFn: addEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      setShowForm(false);
+    },
+  });
 
-  // TODO: Call your mutation function to trigger the event addition.
-  // HINT: Use `mutation.mutate()`.
-  const handleAddEvent = (newEvent) => {};
+  const handleAddEvent = (newEvent) => {
+    mutation.mutate(newEvent);
+  };
 
 
   return (
